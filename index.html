@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quiz Neptur: Comprensión lectora</title>
+    <style>
+        /* --- Optimización para Scroll en WebView --- */
+        html {
+            -webkit-overflow-scrolling: touch; /* Para un scroll más fluido en iOS y algunos WebViews Android */
+            scroll-behavior: smooth; /* Scroll suave para anclas, no directamente para el problema, pero bueno tenerlo */
+        }
+        /* --- Fin Optimización para Scroll --- */
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6DD5FA, #2980B9);
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        #quiz-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 750px;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        #quiz-header {
+            margin-bottom: 25px;
+            border-bottom: 2px solid #007bff; /* Azul para el borde, haciendo juego con el título Neptur */
+            padding-bottom: 15px;
+        }
+
+        #quiz-header h1 {
+            color: #2C3E50;
+            font-size: 2.2em;
+            margin-bottom: 5px;
+        }
+         #quiz-header h1 .neptur-brand {
+            color: #007bff; /* AZUL para Neptur */
+            font-weight: bold;
+        }
+        #quiz-header p {
+            font-size: 1.1em;
+            color: #555;
+        }
+
+
+        #timer {
+            font-size: 1.2em;
+            color: #E74C3C;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        #question-area h2 {
+            font-size: 1.5em;
+            color: #34495E;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            text-align: left;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            background-color: #3498DB;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: #2980B9;
+            transform: translateY(-2px);
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .option-btn.correct {
+            background-color: #2ECC71 !important;
+            border: 2px solid #27ae60;
+        }
+
+        .option-btn.incorrect {
+            background-color: #E74C3C !important;
+            border: 2px solid #c0392b;
+        }
+
+        #explanation-area {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 0.95em;
+            line-height: 1.6;
+            border-left: 5px solid #007bff; /* Azul para el borde de la explicación */
+        }
+        #explanation-area h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+        #explanation-area p {
+            margin-bottom: 5px;
+        }
+
+        #navigation-area button {
+            background-color: #007bff; /* Botón de navegación azul */
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 15px;
+        }
+
+        #navigation-area button:hover {
+            background-color: #0056b3; /* Azul más oscuro para hover */
+        }
+
+        #results-screen {
+            display: none;
+        }
+        #results-screen h2 {
+             color: #2C3E50;
+             font-size: 2em;
+        }
+        #results-screen p {
+            font-size: 1.2em;
+            margin: 15px 0;
+        }
+        #detailed-results-container {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .result-item {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        .result-item p { font-size: 1em; margin: 8px 0; }
+        .result-item strong { color: #333; }
+        .result-item .user-answer.correct { color: #2ECC71; font-weight: bold; }
+        .result-item .user-answer.incorrect { color: #E74C3C; font-weight: bold; }
+        .result-item .explanation-preview {
+            font-style: italic;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        #start-screen {
+            display: block;
+        }
+        #start-screen p {
+            font-size: 1.1em;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        #start-btn {
+            background-color: #F39C12;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.3em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #start-btn:hover {
+            background-color: #E67E22;
+        }
+
+        /* Responsividad */
+        @media (max-width: 600px) {
+            #quiz-container {
+                padding: 20px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+            #quiz-header h1 {
+                font-size: 1.8em;
+            }
+            #question-area h2 {
+                font-size: 1.2em;
+            }
+            .option-btn {
+                padding: 12px 15px;
+                font-size: 0.95em;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="quiz-container">
+        <div id="start-screen">
+            <div id="quiz-header">
+                <h1>Quiz <span class="neptur-brand">Neptur</span></h1>
+                <p>Comprensión lectora (Español 3)</p>
+            </div>
+            <p>Bienvenido al quiz sobre Comprensión lectora. Tendrás <strong>12 minutos</strong> para completarlo.</p>
+            <p>Lee cada pregunta con atención y selecciona la mejor respuesta. Al final, podrás revisar tus aciertos y aprender de cada explicación.</p>
+            <button id="start-btn">Comenzar Quiz</button>
+        </div>
+
+        <div id="question-screen" style="display:none;">
+            <div id="quiz-header">
+                 <h1>Quiz <span class="neptur-brand">Neptur</span></h1>
+                 <p id="question-counter"></p>
+            </div>
+            <div id="timer">Tiempo restante: 12:00</div>
+            <div id="question-area">
+                <h2 id="question-text"></h2>
+                <div id="options-grid">
+                    <button class="option-btn" data-index="0"></button>
+                    <button class="option-btn" data-index="1"></button>
+                    <button class="option-btn" data-index="2"></button>
+                    <button class="option-btn" data-index="3"></button>
+                </div>
+            </div>
+            <div id="explanation-area" style="display:none;">
+                <h3 id="explanation-title"></h3>
+                <p id="explanation-text"></p>
+            </div>
+            <div id="navigation-area">
+                <button id="next-btn" style="display:none;">Siguiente Pregunta</button>
+            </div>
+        </div>
+
+        <div id="results-screen" style="display:none;">
+            <h2>¡Quiz Completado!</h2>
+            <p id="final-score"></p>
+            <p id="time-taken"></p>
+            <h3>Resumen Detallado de Respuestas:</h3>
+            <div id="detailed-results-container">
+                <!-- Aquí se mostrarán los detalles de cada pregunta -->
+            </div>
+            <button id="restart-btn">Volver a Intentar</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN DEL QUIZ ---
+        const TOTAL_TIME = 12 * 60; 
+
+let questions = [
+    {
+        text: "¿Cuál es la definición principal de comprensión lectora según el texto?",
+        options: [
+            "Saber leer rápidamente cualquier tipo de texto.",
+            "La habilidad de entender, evaluar y utilizar el contenido y la idea principal de un texto.",
+            "Memorizar los detalles específicos de un escrito.",
+            "Conocer todas las palabras de un idioma."
+        ],
+        correctAnswerIndex: 1,
+        explanation: {
+            correct: "¡Exacto! La comprensión lectora implica entender, evaluar y usar el contenido e idea principal, basándose en saber leer y conocer las funciones del idioma.",
+            incorrectBase: "Esa no es la definición principal proporcionada. ",
+            optionsExplanation: [
+                "La velocidad no es el único ni principal componente de la comprensión.",
+                "Esta es la definición que ofrece el texto.",
+                "Memorizar detalles es parte de la retención, pero la comprensión es más profunda.",
+                "Conocer todas las palabras es vocabulario, útil pero no la definición de comprensión en sí."
+            ]
+        }
+    },
+    {
+        text: "Según el texto, ¿cuáles son los cuatro elementos básicos que conforman la estructura de un texto para su análisis?",
+        options: [
+            "Personajes, ambiente, trama y conflicto.",
+            "Título, introducción, desarrollo y conclusiones.",
+            "Ideas primarias, ideas secundarias, inferencias y argumentos.",
+            "Ortografía, gramática, sintaxis y vocabulario."
+        ],
+        correctAnswerIndex: 1,
+        explanation: {
+            correct: "¡Correcto! El texto especifica que para el análisis es importante conocer la estructura: título, introducción, desarrollo y conclusiones.",
+            incorrectBase: "Estos no son los cuatro elementos estructurales básicos mencionados para el análisis textual. ",
+            optionsExplanation: [
+                "Estos son elementos más típicos de un texto narrativo.",
+                "Esta es la respuesta correcta según el documento.",
+                "Estos son conceptos importantes para la comprensión, pero no la estructura básica del texto en sí.",
+                "Estos son aspectos del lenguaje, no la estructura del texto."
+            ]
+        }
+    },
+    {
+        text: "¿Qué función cumple el 'desarrollo' en la estructura de un texto?",
+        options: [
+            "Indicar de qué va a tratar el texto.",
+            "Dar una visión general de la información sobre el tema.",
+            "Plasmar las ideas principales del texto presentando todos los argumentos.",
+            "Abordar reflexiones o resultados de todo lo presentado."
+        ],
+        correctAnswerIndex: 2,
+        explanation: {
+            correct: "¡Muy bien! En el desarrollo es donde el autor expone y argumenta las ideas principales del texto.",
+            incorrectBase: "Esa función corresponde a otra parte de la estructura textual. ",
+            optionsExplanation: [
+                "Eso lo hace el título.",
+                "Eso es propio de la introducción.",
+                "Esta es la función correcta del desarrollo.",
+                "Esto se realiza en las conclusiones."
+            ]
+        }
+    },
+    {
+        text: "¿Cómo se pueden identificar las 'ideas primarias' de un texto?",
+        options: [
+            "Buscando los ejemplos y datos específicos.",
+            "Preguntándose ¿Qué opina el autor sobre el tema que escribe?",
+            "Identificando las palabras más repetidas en el texto.",
+            "Enfocándose en la información que aparece solo en la introducción."
+        ],
+        correctAnswerIndex: 1,
+        explanation: {
+            correct: "¡Excelente! El texto sugiere que para hallar la idea primaria nos preguntemos qué opina el autor sobre el tema, ya que esta idea será la más retomada.",
+            incorrectBase: "Esta no es la forma principal de identificar las ideas primarias según el texto. ",
+            optionsExplanation: [
+                "Los ejemplos y datos suelen ser ideas secundarias que apoyan a la primaria.",
+                "Esta es la pregunta clave que propone el texto.",
+                "Palabras repetidas pueden indicar el tema, pero no necesariamente la idea primaria completa.",
+                "La idea primaria se desarrolla a lo largo del texto, no solo en la introducción."
+            ]
+        }
+    },
+    {
+        text: "¿Qué es la 'información explícita' en un texto?",
+        options: [
+            "Información que el lector debe deducir o inferir.",
+            "La opinión personal del lector sobre el texto.",
+            "Información que está escrita, especificada de forma clara y detallada en el texto.",
+            "Conocimientos previos que el lector tiene sobre el tema."
+        ],
+        correctAnswerIndex: 2,
+        explanation: {
+            correct: "¡Así es! La información explícita es aquella que se encuentra directamente escrita y detallada en el texto, sin necesidad de interpretación adicional.",
+            incorrectBase: "La definición de información explícita es diferente. ",
+            optionsExplanation: [
+                "Eso corresponde a la información implícita.",
+                "La opinión del lector es una interpretación o juicio, no información explícita del texto.",
+                "Esta es la definición correcta.",
+                "Los conocimientos previos son importantes, pero no son la información explícita del texto en sí."
+            ]
+        }
+    },
+    {
+        text: "La 'inferencia' en la comprensión lectora se refiere a:",
+        options: [
+            "Copiar literalmente fragmentos del texto.",
+            "Identificar únicamente la información escrita de forma clara.",
+            "Buscar o deducir información que no es explícita, leyendo entre líneas.",
+            "Ignorar la intención del autor y enfocarse solo en los hechos."
+        ],
+        correctAnswerIndex: 2,
+        explanation: {
+            correct: "¡Perfecto! Inferir es ir más allá de lo evidente, buscando y deduciendo información que el autor no expresa directamente pero que se puede entender del contexto.",
+            incorrectBase: "La inferencia implica un proceso más profundo que eso. ",
+            optionsExplanation: [
+                "Copiar fragmentos es citar, no inferir.",
+                "Identificar lo claro es reconocer la información explícita; la inferencia va más allá.",
+                "Esta es la respuesta correcta.",
+                "Inferir a menudo implica considerar la posible intención del autor."
+            ]
+        }
+    },
+    {
+        text: "¿Por qué es importante la habilidad de inferir para ser un lector crítico?",
+        options: [
+            "Porque permite memorizar más rápido el contenido.",
+            "Porque ayuda a aceptar toda la información sin cuestionarla.",
+            "Porque permite cuestionar lo que leemos y descubrir intenciones del autor que podrían no ser evidentes.",
+            "Porque asegura que siempre entendamos el texto de la misma manera que otros lectores."
+        ],
+        correctAnswerIndex: 2,
+        explanation: {
+            correct: "¡Muy bien! La inferencia nos ayuda a ser lectores críticos al permitirnos ir más allá de la superficie, descubrir posibles intenciones ocultas y cuestionar la información presentada.",
+            incorrectBase: "La inferencia tiene un rol más activo en la criticidad. ",
+            optionsExplanation: [
+                "La memorización no es el principal beneficio de la inferencia para la criticidad.",
+                "Al contrario, la inferencia fomenta el cuestionamiento.",
+                "Esta es la respuesta correcta.",
+                "La interpretación puede variar; la inferencia ayuda a fundamentar esa interpretación de forma crítica."
+            ]
+        }
+    },
+    {
+        text: "¿Qué es un 'argumento' en el contexto de un texto?",
+        options: [
+            "Una historia breve con moraleja.",
+            "Una descripción detallada de un objeto.",
+            "El razonamiento empleado para demostrar o probar que lo que se escribe es cierto.",
+            "La idea principal o central del texto."
+        ],
+        correctAnswerIndex: 2,
+        explanation: {
+            correct: "¡Correcto! Un argumento es el conjunto de razonamientos y pruebas que un escritor utiliza para dar veracidad y sustentar sus afirmaciones.",
+            incorrectBase: "Esa definición corresponde a otro concepto. ",
+            optionsExplanation: [
+                "Eso sería una fábula o narración.",
+                "Eso es una descripción.",
+                "Esta es la definición de argumento según el texto.",
+                "Aunque un argumento apoya la idea principal, no es la idea principal en sí misma, sino el razonamiento detrás."
+            ]
+        }
+    },
+    {
+        text: "Los tres elementos que conforman la estructura de un argumento son:",
+        options: [
+            "Título, introducción y desarrollo.",
+            "Idea primaria, idea secundaria y ejemplo.",
+            "Tesis, premisas y conclusión.",
+            "Hecho, opinión e inferencia."
+        ],
+        correctAnswerIndex: 2,
+        explanation: {
+            correct: "¡Excelente! El texto indica que un argumento se compone de una tesis (afirmación), premisas (sustento) y una conclusión (resultado del razonamiento).",
+            incorrectBase: "Estos no son los tres elementos estructurales de un argumento según el documento. ",
+            optionsExplanation: [
+                "Estos son elementos de la estructura general de un texto.",
+                "Estos son componentes de un texto, pero no la estructura de un argumento.",
+                "Esta es la respuesta correcta.",
+                "Estos son tipos de información o procesos mentales, no la estructura de un argumento."
+            ]
+        }
+    },
+    {
+        text: "En la estructura de un argumento, ¿qué son las 'premisas'?",
+        options: [
+            "La afirmación principal que sustenta el razonamiento.",
+            "El enunciado final que afirma o niega la tesis.",
+            "Los elementos que sustentan o rechazan la tesis.",
+            "Las ideas secundarias que decoran el texto."
+        ],
+        correctAnswerIndex: 2,
+        explanation: {
+            correct: "¡Así es! Las premisas son las razones, datos o enunciados que se ofrecen como base o sustento para apoyar (o refutar) la tesis principal.",
+            incorrectBase: "Esa es la función de otra parte del argumento. ",
+            optionsExplanation: [
+                "Eso es la tesis.",
+                "Eso es la conclusión.",
+                "Esta es la definición correcta de premisas.",
+                "Las ideas secundarias pueden ser parte de las premisas, pero 'decorar' no es su función principal en un argumento."
+            ]
+        }
+    }
+];
+
+        // --- VARIABLES GLOBALES ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeLeft = TOTAL_TIME;
+        let timerInterval;
+        let quizStartTime;
+        let userAnswers = [];
+
+        // --- ELEMENTOS DEL DOM ---
+        const startScreen = document.getElementById('start-screen');
+        const questionScreen = document.getElementById('question-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        
+        const startBtn = document.getElementById('start-btn');
+        const timerDisplay = document.getElementById('timer');
+        const questionCounter = document.getElementById('question-counter');
+        const questionText = document.getElementById('question-text');
+        const optionButtons = document.querySelectorAll('.option-btn');
+        const explanationArea = document.getElementById('explanation-area');
+        const explanationTitle = document.getElementById('explanation-title');
+        const explanationText = document.getElementById('explanation-text');
+        const nextBtn = document.getElementById('next-btn');
+        
+        const finalScoreDisplay = document.getElementById('final-score');
+        const timeTakenDisplay = document.getElementById('time-taken');
+        const detailedResultsContainer = document.getElementById('detailed-results-container');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // --- FUNCIONES ---
+        function startQuiz() {
+            // console.log("startQuiz function called!"); // Para depuración
+            // console.log("Questions array:", questions); // Para depuración
+            if (questions.length === 0) {
+                alert("Error: No hay preguntas cargadas. Por favor, revisa el array 'questions' en el script.");
+                return;
+            }
+
+            startScreen.style.display = 'none';
+            questionScreen.style.display = 'block';
+            resultsScreen.style.display = 'none';
+
+            currentQuestionIndex = 0;
+            score = 0;
+            timeLeft = TOTAL_TIME;
+            userAnswers = [];
+            questions.forEach(q => {
+                q.userAnswerIndex = null;
+                q.isCorrect = null;
+            });
+
+
+            quizStartTime = new Date();
+            displayQuestion();
+            startTimer();
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const currentQuestion = questions[currentQuestionIndex];
+                questionCounter.textContent = `Pregunta ${currentQuestionIndex + 1} de ${questions.length}`;
+                questionText.textContent = currentQuestion.text;
+                
+                optionButtons.forEach((btn, index) => {
+                    btn.textContent = currentQuestion.options[index];
+                    btn.disabled = false;
+                    btn.classList.remove('correct', 'incorrect');
+                    btn.style.display = 'block';
+                });
+
+                explanationArea.style.display = 'none';
+                nextBtn.style.display = 'none';
+                window.scrollTo(0,0);
+            } else {
+                endQuiz();
+            }
+        }
+
+        function handleOptionClick(event) {
+            const selectedOptionIndex = parseInt(event.target.dataset.index);
+            const currentQuestion = questions[currentQuestionIndex];
+            
+            currentQuestion.userAnswerIndex = selectedOptionIndex;
+
+            optionButtons.forEach(btn => btn.disabled = true);
+
+            let explanationToShow = "";
+            let titleExplanation = "";
+
+            if (selectedOptionIndex === currentQuestion.correctAnswerIndex) {
+                score++;
+                event.target.classList.add('correct');
+                titleExplanation = "¡Respuesta Correcta!";
+                explanationToShow = currentQuestion.explanation.correct;
+                currentQuestion.isCorrect = true;
+            } else {
+                event.target.classList.add('incorrect');
+                optionButtons[currentQuestion.correctAnswerIndex].classList.add('correct');
+                titleExplanation = "Respuesta Incorrecta";
+                explanationToShow = `${currentQuestion.explanation.incorrectBase} La respuesta correcta era: "<strong>${currentQuestion.options[currentQuestion.correctAnswerIndex]}</strong>".<br><br><em>Explicación:</em> ${currentQuestion.explanation.optionsExplanation[currentQuestion.correctAnswerIndex]}`;
+                if (currentQuestion.explanation.optionsExplanation[selectedOptionIndex] !== currentQuestion.explanation.optionsExplanation[currentQuestion.correctAnswerIndex]) {
+                     explanationToShow = `Elegiste: "${currentQuestion.options[selectedOptionIndex]}".<br><em>Por qué no es correcto:</em> ${currentQuestion.explanation.optionsExplanation[selectedOptionIndex]}<br><br>La respuesta correcta era: "<strong>${currentQuestion.options[currentQuestion.correctAnswerIndex]}</strong>".<br><em>Explicación:</em> ${currentQuestion.explanation.optionsExplanation[currentQuestion.correctAnswerIndex]}`;
+                }
+                 currentQuestion.isCorrect = false;
+            }
+            
+            explanationTitle.textContent = titleExplanation;
+            explanationText.innerHTML = explanationToShow;
+            explanationArea.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+
+            userAnswers.push({
+                questionText: currentQuestion.text,
+                options: currentQuestion.options,
+                userAnswer: currentQuestion.options[selectedOptionIndex],
+                correctAnswer: currentQuestion.options[currentQuestion.correctAnswerIndex],
+                isCorrect: selectedOptionIndex === currentQuestion.correctAnswerIndex,
+                explanation: explanationToShow
+            });
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            displayQuestion();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerDisplay.textContent = `Tiempo restante: ${Math.floor(timeLeft / 60)}:${(timeLeft % 60) < 10 ? '0' : ''}${timeLeft % 60}`;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.textContent = `Tiempo restante: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = "¡Tiempo agotado!";
+                    endQuiz(true); 
+                }
+            }, 1000);
+        }
+
+        function endQuiz(timeUp = false) {
+            clearInterval(timerInterval);
+            questionScreen.style.display = 'none';
+            resultsScreen.style.display = 'block';
+             window.scrollTo(0,0);
+
+            const quizEndTime = new Date();
+            const timeSpentMs = quizEndTime - quizStartTime;
+            const timeSpentSec = Math.floor(timeSpentMs / 1000);
+            const minutesSpent = Math.floor(timeSpentSec / 60);
+            const secondsSpent = timeSpentSec % 60;
+
+            if (timeUp) {
+                 finalScoreDisplay.textContent = `¡Tiempo agotado! Tu puntaje final es: ${score} de ${questions.length}`;
+            } else {
+                 finalScoreDisplay.textContent = `Tu puntaje final es: ${score} de ${questions.length}`;
+            }
+            timeTakenDisplay.textContent = `Tiempo utilizado: ${minutesSpent} minutos y ${secondsSpent} segundos.`;
+
+            renderDetailedResults();
+        }
+        
+        function renderDetailedResults() {
+            detailedResultsContainer.innerHTML = ''; 
+            questions.forEach((q, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('result-item');
+                
+                let userAnswerText = "No respondida";
+                let userAnswerClass = "";
+                let explanationContent = q.explanation.optionsExplanation[q.correctAnswerIndex];
+
+                if (q.userAnswerIndex !== null) {
+                    userAnswerText = q.options[q.userAnswerIndex];
+                    if (q.isCorrect) {
+                        userAnswerClass = 'correct';
+                        explanationContent = q.explanation.correct;
+                    } else {
+                        userAnswerClass = 'incorrect';
+                        explanationContent = `Elegiste: "${q.options[q.userAnswerIndex]}". <span class="explanation-preview">(${q.explanation.optionsExplanation[q.userAnswerIndex]})</span><br>Correcta: "${q.options[q.correctAnswerIndex]}". <span class="explanation-preview">(${q.explanation.optionsExplanation[q.correctAnswerIndex]})</span>`;
+                    }
+                } else {
+                     explanationContent = `La respuesta correcta era: "${q.options[q.correctAnswerIndex]}". <span class="explanation-preview">(${q.explanation.optionsExplanation[q.correctAnswerIndex]})</span>`;
+                }
+
+                resultDiv.innerHTML = `
+                    <p><strong>Pregunta ${index + 1}:</strong> ${q.text}</p>
+                    <p>Tu respuesta: <span class="user-answer ${userAnswerClass}">${userAnswerText}</span></p>
+                    ${!q.isCorrect && q.userAnswerIndex !== null ? `<p>Respuesta correcta: <strong>${q.options[q.correctAnswerIndex]}</strong></p>` : ''}
+                     ${q.userAnswerIndex === null ? `<p>Respuesta correcta: <strong>${q.options[q.correctAnswerIndex]}</strong></p>` : ''}
+                    <p><em>Explicación:</em> ${explanationContent}</p>
+                `;
+                detailedResultsContainer.appendChild(resultDiv);
+            });
+        }
+
+        // --- EVENT LISTENERS ---
+        startBtn.addEventListener('click', startQuiz);
+        nextBtn.addEventListener('click', nextQuestion);
+        restartBtn.addEventListener('click', () => {
+            resultsScreen.style.display = 'none';
+            startScreen.style.display = 'block';
+            window.scrollTo(0,0);
+        });
+
+        optionButtons.forEach(button => {
+            button.addEventListener('click', handleOptionClick);
+        });
+
+    </script>
+</body>
+</html>
